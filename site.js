@@ -535,9 +535,11 @@
       // (x 0.64); skin between y 0.38 and 0.64 at mid-forearm; ~6.4 px per mm
       d: { pos: [0.5, 0.5], mmU: 0.00232, spots: [[0.27, 0.44], [0.345, 0.44], [0.42, 0.44], [0.495, 0.44], [0.27, 0.565], [0.345, 0.565], [0.42, 0.565], [0.495, 0.565]] },
       // arm-m.webp: forearm vertical, wrist at y 0.56. Skin measured on the
-      // pixels (skin hue vs paper): x 0.41..0.58 between y 0.33 and 0.53,
-      // centre 0.495, about 3.4 px per mm
-      m: { pos: [0.5, 0.5], mmU: 0.0026, spots: [[0.457, 0.335], [0.457, 0.395], [0.455, 0.455], [0.452, 0.515], [0.535, 0.335], [0.535, 0.395], [0.535, 0.455], [0.533, 0.515]] }
+      // pixels, shaded side included: x 0.377..0.591 at y 0.335 narrowing to
+      // 0.403..0.578 at y 0.515 (centre 0.484 to 0.491), about 3.4 px per mm.
+      // Each row is centred on the arm and spaced to its width, so the two
+      // columns (and the mirrored pen marks) sit in the middle of the forearm.
+      m: { pos: [0.5, 0.5], mmU: 0.0026, spots: [[0.444, 0.335], [0.454, 0.395], [0.456, 0.455], [0.458, 0.515], [0.524, 0.335], [0.526, 0.395], [0.524, 0.455], [0.524, 0.515]] }
     };
     var geo = GEO.d, panel = 'inalantes', hot = -1, lastKey = '', dpr = 1, box = null, M = null;
     var pens = [];
@@ -588,9 +590,14 @@
         }
       }
       var fs = clamp(M.mm * 4.6, 15, 26);
+      var off = Math.max(M.mm * 5, 16);
       pens.forEach(function (el, i) {
         var c = spotXY(i);
-        el.style.left = (c[0] - Math.max(M.mm * 5, 16)).toFixed(1) + 'px';
+        // phone: the arm is upright with two columns of points, so the pen
+        // writes 1-4 to the left of theirs and 5-8 to the right, mirrored, and
+        // the marks sit centred on the forearm like the points do
+        var mirror = SMALL.matches && i >= 4;
+        el.style.left = (mirror ? c[0] + off : c[0] - off).toFixed(1) + 'px';   // the mark is centred on this point (translate -50%)
         el.style.top = (c[1] - Math.max(M.mm * 5.2, 17)).toFixed(1) + 'px';
         el.style.fontSize = fs.toFixed(1) + 'px';
       });
