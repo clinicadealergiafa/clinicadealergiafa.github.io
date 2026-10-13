@@ -123,6 +123,7 @@
   }
   addEventListener('pointermove', function (e) { onPtr(e.clientX, e.clientY); }, { passive: true });
   addEventListener('touchmove', function (e) { var t = e.touches[0]; if (t) onPtr(t.clientX, t.clientY); }, { passive: true });
+  addEventListener('touchstart', function (e) { var t = e.touches[0]; if (t) { ptr.on = false; onPtr(t.clientX, t.clientY); } }, { passive: true });
   addEventListener('touchend', function () { ptr.on = false; }, { passive: true });
   document.addEventListener('mouseout', function (e) { if (!e.relatedTarget) ptr.on = false; });
 
@@ -173,7 +174,9 @@
     // runs from the window toward the bed; the focus is the bear on the pillow.
     var LAYOUT = {
       d: { beam: [0.03, 0.06, 0.66, 0.52], width: 0.15, focus: [0.84, 0.57], n: 300 },
-      m: { beam: [0.02, 0.08, 0.7, 0.5], width: 0.2, focus: [0.62, 0.7], n: 160 }
+      // phone: the light lands as a band from mid-left down to the bed, below
+      // the headline, so the dust lives in it (and stays off the copy)
+      m: { beam: [0.0, 0.41, 1.0, 0.7], width: 0.17, focus: [0.62, 0.7], n: 240 }
     };
     var L = LAYOUT.d;
     var W = 0, H = 0, dpr = 1, parts = [], rect = null;
@@ -277,14 +280,17 @@
       var t = now / 1000, p = a.p, f = L.focus;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, cv.width, cv.height);
-      var unit = Math.min(W, H) / 900 * dpr;
+      // phones get bigger, brighter specks: scaled to a 900 px desktop side they
+      // came out at 2 to 3 px and vanished against the pale wall
+      var small = SMALL.matches;
+      var unit = Math.min(W, H) / (small ? 530 : 900) * dpr, gain = small ? 1.35 : 1;
       for (var i = 0; i < parts.length; i++) {
         var q = parts[i];
         // the camera leans toward the bear: near particles open out faster
         var k = 1 + p * (0.12 + 0.95 * q.z);
         var x = f[0] + (q.x - f[0]) * k, y = f[1] + (q.y - f[1]) * k - p * 0.05 * q.z;
         if (x < -0.05 || x > 1.05 || y < -0.05 || y > 1.05) continue;
-        var tw = 0.72 + 0.28 * Math.sin(t * (1.1 + q.sp) + q.ph);
+        var tw = small ? 0.6 + 0.4 * Math.sin(t * (1.1 + q.sp) + q.ph) : 0.72 + 0.28 * Math.sin(t * (1.1 + q.sp) + q.ph);
         var I = beamI(x, y);
         var size, alpha, img;
         if (q.bokeh) {
@@ -294,7 +300,7 @@
           ctx.globalCompositeOperation = 'screen';
         } else {
           size = (6 + 13 * q.z * q.z) * unit * (1 + p * 0.6 * q.z);
-          alpha = I * (0.35 + 0.65 * q.z) * tw;
+          alpha = I * (0.35 + 0.65 * q.z) * tw * gain;
           img = SHARP;
           ctx.globalCompositeOperation = 'source-over';
         }
@@ -545,6 +551,12 @@
     var pens = [];
     var SEEDS = [11, 23, 37, 41, 53, 67, 71, 89];
 
+    // The act is longer than the exam: the clock runs over the first READ_AT of
+    // the scroll and the reading then holds on screen for the rest, so the
+    // result stays up long enough to be read while the page keeps moving.
+    // tl() maps act progress onto the exam timeline (0.86 = 15:00).
+    var READ_AT = 0.7;
+    function tl(p) { return p < READ_AT ? p * 0.86 / READ_AT : 0.86 + (p - READ_AT) * 0.14 / (1 - READ_AT); }
     function minutesAt(p) {
       if (p < 0.06) return 0;
       if (p < 0.12) return (p - 0.06) / 0.06;
@@ -602,6 +614,9 @@
         el.style.top = (c[1] - Math.max(M.mm * 5.2, 17)).toFixed(1) + 'px';
         el.style.fontSize = fs.toFixed(1) + 'px';
       });
+      var cx = 0, cy = 0;
+      for (var k = 0; k < 8; k++) { var sp = spotXY(k); cx += sp[0] / 8; cy += sp[1] / 8; }
+      media.style.transformOrigin = cx.toFixed(1) + 'px ' + cy.toFixed(1) + 'px';
       lastKey = '';
     }
     function spotXY(i) {
@@ -700,6 +715,10 @@
 
     function render(p) {
       var min = minutesAt(p);
+      // while the reading holds, the camera leans in on the points (the whole
+      // media layer scales, so photo, wheals and pen marks stay together)
+      var hold = REDUCE ? 0 : smooth((p - 0.86) / 0.14);
+      media.style.transform = hold > 0 ? 'scale(' + (1 + 0.045 * hold).toFixed(4) + ')' : '';
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, box.width, box.height);
       var u = M.mm;
@@ -743,7 +762,7 @@
     }
 
     function showTip(i, min) {
-      var c = spotXY(i), mm = Math.round(whealMm(i, min == null ? minutesAt(a.p) : min));
+      var c = spotXY(i), mm = Math.round(whealMm(i, min == null ? minutesAt(tl(a.p)) : min));
       tip.innerHTML = PANELS[panel].names[i] + ' · <b>' + mm + ' mm</b>';
       tip.style.left = c[0].toFixed(1) + 'px';
       tip.style.top = (c[1] - M.mm * 5).toFixed(1) + 'px';
@@ -804,7 +823,7 @@
       var key = a.p.toFixed(4) + panel + hot;
       if (key === lastKey) return;
       lastKey = key;
-      render(a.p);
+      render(tl(a.p));
     }
 
     // The photo is a <picture>: crossing the phone breakpoint swaps the file, and
