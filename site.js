@@ -539,7 +539,7 @@
       // 0.403..0.578 at y 0.515 (centre 0.484 to 0.491), about 3.4 px per mm.
       // Each row is centred on the arm and spaced to its width, so the two
       // columns (and the mirrored pen marks) sit in the middle of the forearm.
-      m: { pos: [0.5, 0.5], mmU: 0.0026, spots: [[0.444, 0.335], [0.454, 0.395], [0.456, 0.455], [0.458, 0.515], [0.524, 0.335], [0.526, 0.395], [0.524, 0.455], [0.524, 0.515]] }
+      m: { pos: [0.5, 0.5], mmU: 0.0026, spots: [[0.453, 0.335], [0.462, 0.395], [0.4635, 0.455], [0.465, 0.515], [0.515, 0.335], [0.518, 0.395], [0.5165, 0.455], [0.517, 0.515]] }
     };
     var geo = GEO.d, panel = 'inalantes', hot = -1, lastKey = '', dpr = 1, box = null, M = null;
     var pens = [];
@@ -590,7 +590,8 @@
         }
       }
       var fs = clamp(M.mm * 4.6, 15, 26);
-      var off = Math.max(M.mm * 5, 16);
+      // on phones the pairs sit closer to the middle of the forearm
+      var off = SMALL.matches ? Math.max(M.mm * 4, 12.5) : Math.max(M.mm * 5, 16);
       pens.forEach(function (el, i) {
         var c = spotXY(i);
         // phone: the arm is upright with two columns of points, so the pen
