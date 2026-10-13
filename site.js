@@ -551,11 +551,12 @@
     var pens = [];
     var SEEDS = [11, 23, 37, 41, 53, 67, 71, 89];
 
-    // The act is longer than the exam: the clock runs over the first READ_AT of
-    // the scroll and the reading then holds on screen for the rest, so the
-    // result stays up long enough to be read while the page keeps moving.
-    // tl() maps act progress onto the exam timeline (0.86 = 15:00).
-    var READ_AT = 0.7;
+    // The act is a little longer than the exam: the clock runs over the first
+    // READ_AT of the scroll, the reading holds for the rest while the camera
+    // leans in, and then the whole scene (result included, nothing fades)
+    // scrolls away together. tl() maps act progress onto the exam timeline
+    // (0.86 = 15:00).
+    var READ_AT = 0.78;
     function tl(p) { return p < READ_AT ? p * 0.86 / READ_AT : 0.86 + (p - READ_AT) * 0.14 / (1 - READ_AT); }
     function minutesAt(p) {
       if (p < 0.06) return 0;

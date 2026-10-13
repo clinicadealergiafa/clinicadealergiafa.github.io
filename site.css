@@ -705,13 +705,16 @@ p { margin: 0; }
   .test__title { font-size: 1.7rem; }
   .test__intro { display: none; }
   .seg { margin-top: var(--sc-3); }
-  .test__tr { right: var(--sc-gutter); top: calc(var(--bar-h) + 0.75rem); width: 7.5rem; }
+  /* phone: the clock and the reading are placed on the stage itself, so the
+     reading belongs to the scene and leaves with it instead of fading */
+  .test__tr { position: static; }
+  .test__clock { position: absolute; z-index: 10; right: var(--sc-gutter); top: calc(var(--bar-h) + 0.75rem); width: 7.5rem; }
   .test__time { font-size: 2.4rem; }
   .test__phase { font-size: 0.75rem; max-width: 7.5rem; margin-left: auto; }
   /* the reading needs the full width on a phone: it leaves the clock column
-     and sits over the paper, just above the legend, only while the act pins */
+     and sits over the paper, just above the legend */
   .test__result {
-    position: fixed; left: var(--sc-gutter); right: var(--sc-gutter);
+    position: absolute; z-index: 10; left: var(--sc-gutter); right: var(--sc-gutter);
     bottom: calc(11.6rem + env(safe-area-inset-bottom));
     padding: 0.7rem 0.85rem; border-radius: var(--r-md);
     background: #F4F2EE;
